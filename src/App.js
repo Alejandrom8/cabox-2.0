@@ -1,25 +1,54 @@
-import logo from './logo.svg';
-import './App.css';
+import {useEffect} from "react";
+import { CssBaseline, MuiThemeProvider} from "@material-ui/core";
+import Theme from './components/Theme';
+import HomeView from './views/Home';
+import LoginView from './views/Login';
+import {
+    BrowserRouter as Router,
+    Switch,
+    Route,
+    Redirect,
+} from "react-router-dom";
+import * as authActions from './state/actions/auth';
+import { connect } from "react-redux";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+function App({ token, refreshToken }) {
+
+    useEffect(() => {
+        const storedRefreshToken = window.localStorage.getItem('refreshToken');
+        if (!storedRefreshToken) return;
+        console.log('executing refresh token');
+        refreshToken(storedRefreshToken);
+    });
+
+    return <MuiThemeProvider theme={Theme}>
+        <CssBaseline />
+        <Router>
+            <Switch>
+                <Route path={'/login'}>
+                    <LoginView />
+                </Route>
+                <Route path={'/'} render={(props) =>
+                    token ? (
+                        <HomeView />
+                    ) : (
+                        <Redirect
+                            to={{
+                                pathname: "/login",
+                                state: { from: props.location }
+                            }}
+                        />
+                    )
+                } />
+            </Switch>
+        </Router>
+    </MuiThemeProvider>;
 }
 
-export default App;
+const mapStateToProps = ({ authReducer }) => ({
+    token: authReducer.token
+});
+
+const mapDispatchToProps = { ...authActions };
+
+export default connect(mapStateToProps, mapDispatchToProps)(App);
